@@ -15,7 +15,7 @@ def tampilkan_menu():
     print("2. Filter Maksimum")
     print("3. Filter Minimum")
     print("4. Filter Median")
-    print("5. Filter Mean (Rata-rata)")  # Filter baru
+    print("5. Filter Mean (Rata-rata)")
     print("6. Deteksi Tepi Sobel")
     print("7. Prewitt Horizontal")
     print("8. Prewitt Vertikal")
@@ -36,6 +36,61 @@ def pilih_gambar():
     
     return file_path
 
+def filter_canny(gray_img):
+    """Menerapkan filter Canny (deteksi tepi)"""
+    sobel = gray_img.filter(ImageFilter.FIND_EDGES)
+    threshold = 100
+    return sobel.point(lambda x: 255 if x > threshold else 0)
+
+def filter_maximum(gray_img):
+    """Menerapkan filter Maximum"""
+    return gray_img.filter(ImageFilter.MaxFilter(size=3))
+
+def filter_minimum(gray_img):
+    """Menerapkan filter Minimum"""
+    return gray_img.filter(ImageFilter.MinFilter(size=3))
+
+def filter_median(gray_img):
+    """Menerapkan filter Median"""
+    return gray_img.filter(ImageFilter.MedianFilter(size=3))
+
+def filter_mean(gray_img):
+    """Menerapkan filter Mean (rata-rata)"""
+    return gray_img.filter(ImageFilter.BoxBlur(radius=1))
+
+def filter_sobel(gray_img):
+    """Menerapkan filter Sobel (deteksi tepi)"""
+    return gray_img.filter(ImageFilter.FIND_EDGES)
+
+def filter_prewitt_horizontal(gray_img):
+    """Menerapkan filter Prewitt horizontal"""
+    prewitt_h = ImageFilter.Kernel((3, 3), [-1, 0, 1, -1, 0, 1, -1, 0, 1], 1)
+    return gray_img.filter(prewitt_h)
+
+def filter_prewitt_vertical(gray_img):
+    """Menerapkan filter Prewitt vertikal"""
+    prewitt_v = ImageFilter.Kernel((3, 3), [-1, -1, -1, 0, 0, 0, 1, 1, 1], 1)
+    return gray_img.filter(prewitt_v)
+
+def filter_prewitt_combined(gray_img):
+    """Menerapkan kombinasi filter Prewitt horizontal dan vertikal"""
+    prewitt_h = ImageFilter.Kernel((3, 3), [-1, 0, 1, -1, 0, 1, -1, 0, 1], 1)
+    prewitt_v = ImageFilter.Kernel((3, 3), [-1, -1, -1, 0, 0, 0, 1, 1, 1], 1)
+    h_filtered = gray_img.filter(prewitt_h)
+    v_filtered = gray_img.filter(prewitt_v)
+    return Image.blend(h_filtered, v_filtered, 0.5)
+
+def buka_gambar(path):
+    """Membuka gambar hasil filter dengan aplikasi default sistem"""
+    try:
+        if os.name == 'nt':  # Windows
+            os.system(f'start "{path}"')
+        elif os.name == 'posix':  # macOS dan Linux
+            os.system(f'open "{path}"' if os.uname().sysname == 'Darwin' else f'xdg-open "{path}"')
+        print("Gambar dibuka di aplikasi default.")
+    except:
+        print("Tidak dapat membuka gambar secara otomatis.")
+
 def terapkan_filter(image_path, filter_type):
     """Fungsi untuk menerapkan filter pada gambar"""
     try:
@@ -48,73 +103,45 @@ def terapkan_filter(image_path, filter_type):
         # Dapatkan tanggal dan waktu sekarang untuk nama file
         current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Terapkan filter sesuai pilihan
-        if filter_type == '1':  # Canny
-            sobel = gray_img.filter(ImageFilter.FIND_EDGES)
-            threshold = 100
-            filtered = sobel.point(lambda x: 255 if x > threshold else 0)
-            output_path = f"output/canny_{current_date}.png"
-            
-        elif filter_type == '2':  # Max
-            filtered = gray_img.filter(ImageFilter.MaxFilter(size=3))
-            output_path = f"output/max_{current_date}.png"
-            
-        elif filter_type == '3':  # Min
-            filtered = gray_img.filter(ImageFilter.MinFilter(size=3))
-            output_path = f"output/min_{current_date}.png"
-            
-        elif filter_type == '4':  # Median
-            filtered = gray_img.filter(ImageFilter.MedianFilter(size=3))
-            output_path = f"output/median_{current_date}.png"
-            
-        elif filter_type == '5':  # Mean (filter baru)
-            filtered = gray_img.filter(ImageFilter.BoxBlur(radius=1))  # BoxBlur adalah filter mean/rata-rata
-            output_path = f"output/mean_{current_date}.png"
-            
-        elif filter_type == '6':  # Sobel
-            filtered = gray_img.filter(ImageFilter.FIND_EDGES)
-            output_path = f"output/sobel_{current_date}.png"
-            
-        elif filter_type == '7':  # Prewitt Horizontal
-            prewitt_h = ImageFilter.Kernel((3, 3), [-1, 0, 1, -1, 0, 1, -1, 0, 1], 1)
-            filtered = gray_img.filter(prewitt_h)
-            output_path = f"output/prewitt_h_{current_date}.png"
-            
-        elif filter_type == '8':  # Prewitt Vertikal
-            prewitt_v = ImageFilter.Kernel((3, 3), [-1, -1, -1, 0, 0, 0, 1, 1, 1], 1)
-            filtered = gray_img.filter(prewitt_v)
-            output_path = f"output/prewitt_v_{current_date}.png"
-            
-        elif filter_type == '9':  # Prewitt Kombinasi
-            prewitt_h = ImageFilter.Kernel((3, 3), [-1, 0, 1, -1, 0, 1, -1, 0, 1], 1)
-            prewitt_v = ImageFilter.Kernel((3, 3), [-1, -1, -1, 0, 0, 0, 1, 1, 1], 1)
-            h_filtered = gray_img.filter(prewitt_h)
-            v_filtered = gray_img.filter(prewitt_v)
-            filtered = Image.blend(h_filtered, v_filtered, 0.5)
-            output_path = f"output/prewitt_combined_{current_date}.png"
+        # Dictionary mapping filter type ke fungsi dan nama file
+        filter_options = {
+            '1': {'func': filter_canny, 'name': 'canny'},
+            '2': {'func': filter_maximum, 'name': 'max'},
+            '3': {'func': filter_minimum, 'name': 'min'},
+            '4': {'func': filter_median, 'name': 'median'},
+            '5': {'func': filter_mean, 'name': 'mean'},
+            '6': {'func': filter_sobel, 'name': 'sobel'},
+            '7': {'func': filter_prewitt_horizontal, 'name': 'prewitt_h'},
+            '8': {'func': filter_prewitt_vertical, 'name': 'prewitt_v'},
+            '9': {'func': filter_prewitt_combined, 'name': 'prewitt_combined'}
+        }
         
-        # Simpan gambar hasil filter
-        filtered.save(output_path)
+        # Mendapatkan filter yang dipilih
+        selected_filter = filter_options.get(filter_type)
         
-        # Tampilkan hasil
-        print(f"\nFilter berhasil diterapkan!")
-        print(f"Gambar hasil disimpan di: {output_path}")
-        
-        # Tanya apakah ingin membuka file
-        buka = input("\nBuka gambar hasil? (y/n): ")
-        if buka.lower() == 'y':
-            try:
-                # Buka gambar dengan aplikasi default
-                import os
-                if os.name == 'nt':  # Windows
-                    os.system(f'start {output_path}')
-                elif os.name == 'posix':  # macOS dan Linux
-                    os.system(f'open {output_path}' if os.uname().sysname == 'Darwin' else f'xdg-open {output_path}')
-                print("Gambar dibuka di aplikasi default.")
-            except:
-                print("Tidak dapat membuka gambar secara otomatis.")
+        if selected_filter:
+            # Terapkan filter
+            filtered = selected_filter['func'](gray_img)
+            
+            # Buat nama file output
+            output_path = f"output/{selected_filter['name']}_{current_date}.png"
+            
+            # Simpan gambar hasil filter
+            filtered.save(output_path)
+            
+            # Tampilkan hasil
+            print(f"\nFilter berhasil diterapkan!")
+            print(f"Gambar hasil disimpan di: {output_path}")
+            
+            # Tanya apakah ingin membuka file
+            buka = input("\nBuka gambar hasil? (y/n): ")
+            if buka.lower() == 'y':
+                buka_gambar(output_path)
                 
-        return True
+            return True
+        else:
+            print("Pilihan filter tidak valid.")
+            return False
         
     except Exception as e:
         print(f"\nError: {str(e)}")
