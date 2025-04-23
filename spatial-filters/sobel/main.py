@@ -5,7 +5,7 @@ import os
 os.makedirs("output", exist_ok=True)
 
 # Open image
-img1 = Image.open("images/image.png").convert('L')
+img1 = Image.open("images/rachel.jpeg").convert('L')
 
 # Sobel filter
 img_sobel = img1.filter(ImageFilter.FIND_EDGES)
