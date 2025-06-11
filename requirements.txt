@@ -1,3 +1,6 @@
 pillow
 matplotlib
-tkinter
+numpy
+scikit-image
+opencv-python
+scipy
